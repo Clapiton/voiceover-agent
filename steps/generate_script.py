@@ -22,12 +22,12 @@ def generate_script(
 ) -> str:
     """
     Generates a spoken voiceover script fitted to the exact video duration
-    using the latest GPT model (default: gpt-4.5-preview or configured SCRIPT_MODEL).
+    using the latest GPT model (default: gpt-5.4 or configured SCRIPT_MODEL).
     """
     if not model:
-        model = os.getenv("SCRIPT_MODEL", "gpt-4.5-preview")
+        model = os.getenv("SCRIPT_MODEL", "gpt-5.4")
 
-    client = OpenAI()
+    client = OpenAI(timeout=60.0, max_retries=3)
     platform_hint = PLATFORM_HINTS.get(platform.lower(), PLATFORM_HINTS["reels"])
 
     # Target word count based on video duration
@@ -57,7 +57,7 @@ def generate_script(
                 )
             }
         ],
-        max_tokens=max(200, target_words * 2)
+        max_completion_tokens=max(200, target_words * 2)
     )
 
     return response.choices[0].message.content.strip()

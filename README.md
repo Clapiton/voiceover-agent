@@ -1,6 +1,6 @@
 # @claplabs Video Voiceover Agent
 
-An agentic pipeline that takes a silent video, analyzes it visually with **GPT-4o Vision**, generates a creator-style voiceover script using the latest **GPT model** (default: `gpt-4.5-preview`), synthesizes the audio with **Kokoro-82M TTS**, and muxes everything back into a single MP4 using **FFmpeg**.
+An agentic pipeline that takes a silent video, analyzes it visually with **GPT-4o Vision**, generates a creator-style voiceover script using the latest **GPT model** (default: `gpt-5.4`), synthesizes the audio with **Kokoro-82M TTS**, and muxes everything back into a single MP4 using **FFmpeg**.
 
 GitHub Repository: [https://github.com/Clapiton/voiceover-agent.git](https://github.com/Clapiton/voiceover-agent.git)
 
@@ -12,7 +12,7 @@ GitHub Repository: [https://github.com/Clapiton/voiceover-agent.git](https://git
 |---|---|---|---|
 | Frame extraction | FFmpeg | LGPL | Free |
 | Visual analysis | GPT-4o Vision | OpenAI API | Pay-per-use |
-| Script generation | GPT (Latest: `gpt-4.5-preview`) | OpenAI API | Pay-per-use |
+| Script generation | GPT (Default: `gpt-5.4`) | OpenAI API | Pay-per-use |
 | Text-to-speech | Kokoro-82M (`hexgrad/kokoro`) | Apache 2.0 | Free |
 | Audio mux | FFmpeg | LGPL | Free |
 
@@ -76,7 +76,7 @@ cp .env.example .env
 
 ```env
 OPENAI_API_KEY=sk-...
-SCRIPT_MODEL=gpt-4.5-preview
+SCRIPT_MODEL=gpt-5.4
 STYLE=energetic tech creator
 FRAME_RATE=0.5
 KOKORO_VOICE=af_bella
@@ -97,7 +97,7 @@ python voiceover.py path/to/video.mp4
 ```bash
 python voiceover.py video.mp4 \
   --style "hype tech creator for Instagram Reels" \
-  --script-model "gpt-4.5-preview" \
+  --script-model "gpt-5.4" \
   --fps 0.5 \
   --voice af_bella \
   --platform reels \
@@ -113,7 +113,7 @@ Available `--platform` options: `reels`, `shorts`, `tiktok`, `linkedin`.
 1. **Frame Extraction**: FFmpeg extracts frames at `--fps` interval.
 2. **Duration Probe**: `ffprobe` determines exact video duration.
 3. **Visual Analysis**: GPT-4o Vision analyzes frame sequence to describe scenes.
-4. **Script Generation**: Latest GPT model (`gpt-4.5-preview`) writes voiceover script tailored to target word count based on duration and platform style.
+4. **Script Generation**: GPT model (`gpt-5.4`) writes voiceover script tailored to target word count based on duration and platform style.
 5. **Voice Synthesis**: Kokoro-82M generates audio; FFmpeg `atempo` aligns audio duration with video.
 6. **Muxing**: FFmpeg joins audio and original video without re-encoding video.
 

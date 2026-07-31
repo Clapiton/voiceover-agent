@@ -45,7 +45,7 @@ claplabs-voiceover/
 
 ```env
 OPENAI_API_KEY=sk-...
-SCRIPT_MODEL=gpt-4.5-preview       # model for script generation (e.g. gpt-4.5-preview)
+SCRIPT_MODEL=gpt-5.4                  # model for script generation (e.g. gpt-5.4)
 STYLE=energetic tech creator       # voice/tone hint passed to GPT
 FRAME_RATE=0.5                     # frames per second to extract (0.5 = 1 frame every 2s)
 KOKORO_VOICE=af_bella              # see voice list below
@@ -269,7 +269,7 @@ def generate_script(
     target_words = math.floor((duration_seconds / 60) * WPM)
 
     response = client.chat.completions.create(
-        model=os.getenv("SCRIPT_MODEL", "gpt-4.5-preview"),
+        model=os.getenv("SCRIPT_MODEL", "gpt-5.4"),
         messages=[
             {
                 "role": "system",

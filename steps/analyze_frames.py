@@ -7,11 +7,19 @@ def encode_image(path: str) -> str:
     with open(path, "rb") as f:
         return base64.b64encode(f.read()).decode("utf-8")
 
-def analyze_frames(frame_paths: List[str], style: str, model: str = "gpt-4o") -> str:
+def analyze_frames(frame_paths: List[str], style: str, model: str = "gpt-4o", max_frames: int = 16) -> str:
     """
     Sends frame sequence to OpenAI Vision model for visual scene analysis.
+    Subsamples frames if count exceeds max_frames to keep request size lightweight and reliable.
     """
-    client = OpenAI()
+    if len(frame_paths) > max_frames:
+        step = len(frame_paths) / max_frames
+        indices = [int(i * step) for i in range(max_frames)]
+        selected_frames = [frame_paths[i] for i in indices]
+    else:
+        selected_frames = frame_paths
+
+    client = OpenAI(timeout=60.0, max_retries=3)
 
     image_messages = [
         {
@@ -21,7 +29,7 @@ def analyze_frames(frame_paths: List[str], style: str, model: str = "gpt-4o") ->
                 "detail": "low"
             }
         }
-        for p in frame_paths
+        for p in selected_frames
     ]
 
     response = client.chat.completions.create(
@@ -44,7 +52,7 @@ def analyze_frames(frame_paths: List[str], style: str, model: str = "gpt-4o") ->
                 ]
             }
         ],
-        max_tokens=1000
+        max_completion_tokens=1000
     )
 
     return response.choices[0].message.content

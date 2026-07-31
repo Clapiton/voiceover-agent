@@ -46,7 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--fps", type=float, default=float(os.getenv("FRAME_RATE", 0.5)))
     parser.add_argument("--voice", default=os.getenv("KOKORO_VOICE", "af_bella"))
     parser.add_argument("--platform", default="reels", choices=["reels", "shorts", "tiktok", "linkedin"])
-    parser.add_argument("--script-model", default=os.getenv("SCRIPT_MODEL", "gpt-4.5-preview"), help="GPT model for script generation")
+    parser.add_argument("--script-model", default=os.getenv("SCRIPT_MODEL", "gpt-5.4"), help="GPT model for script generation")
     parser.add_argument("--output", default="output/final_video.mp4")
     args = parser.parse_args()
 
