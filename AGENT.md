@@ -80,7 +80,7 @@ cp .env.example .env
 
 ```
 openai>=1.30.0
-kokoro>=0.9.2
+kokoro>=0.7.0
 soundfile
 python-dotenv
 Pillow
