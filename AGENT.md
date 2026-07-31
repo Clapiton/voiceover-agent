@@ -79,6 +79,7 @@ cp .env.example .env
 ### requirements.txt
 
 ```
+spacy>=3.7.0,<3.8.0
 openai>=1.30.0
 kokoro>=0.7.0
 soundfile
