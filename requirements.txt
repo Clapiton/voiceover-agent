@@ -1,6 +1,8 @@
-spacy>=3.7.0,<3.8.0
 openai>=1.30.0
 kokoro>=0.7.0
 soundfile
 python-dotenv
 Pillow
+fastapi>=0.110.0
+uvicorn>=0.28.0
+python-multipart>=0.0.9
