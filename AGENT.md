@@ -33,10 +33,11 @@ claplabs-voiceover/
 │   ├── synthesize_voice.py
 │   └── mux_audio.py
 └── output/
-    ├── frames/
-    ├── script.txt
-    ├── voiceover.wav
-    └── final_video.mp4
+    └── <video_name>_<timestamp>/
+        ├── frames/
+        ├── script.txt
+        ├── voiceover.wav
+        └── <video_name>_voiceover.mp4
 ```
 
 ---
