@@ -7,4 +7,3 @@ kokoro>=0.7.0
 soundfile
 python-dotenv
 Pillow
-spacy>=3.7.0,<3.8.0
