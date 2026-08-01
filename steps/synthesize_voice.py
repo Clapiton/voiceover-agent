@@ -1,17 +1,20 @@
 import os
+import gc
 import subprocess
 import soundfile as sf
 import numpy as np
-from kokoro import KPipeline
+
+# Limit PyTorch CPU thread memory overhead on constrained cloud environments
+try:
+    import torch
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
 
 SAMPLE_RATE = 24000   # Kokoro fixed output sample rate
 
 def _build_atempo_filter(ratio: float) -> str:
-    """
-    FFmpeg atempo only accepts values between 0.5 and 2.0.
-    For ratios outside that range, chain multiple atempo filters.
-    e.g. ratio 0.3 -> atempo=0.5,atempo=0.6
-    """
     filters = []
     while ratio < 0.5:
         filters.append("atempo=0.5")
@@ -22,6 +25,31 @@ def _build_atempo_filter(ratio: float) -> str:
     filters.append(f"atempo={ratio:.4f}")
     return ",".join(filters)
 
+def _synthesize_openai_tts(script: str, voice: str, output_path: str):
+    """Zero-RAM Cloud TTS fallback using OpenAI tts-1 model."""
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    
+    # Map Kokoro voices to closest OpenAI voices
+    voice_map = {
+        "af_bella": "nova",
+        "af_nicole": "shimmer",
+        "am_adam": "onyx",
+        "am_michael": "echo",
+        "bf_emma": "fable",
+        "bm_george": "alloy"
+    }
+    tts_voice = voice_map.get(voice, "alloy")
+    
+    response = client.audio.speech.create(
+        model="tts-1",
+        voice=tts_voice,
+        input=script
+    )
+    
+    response.stream_to_file(output_path)
+    return output_path
+
 def synthesize_voice(
     script: str,
     voice: str,
@@ -29,44 +57,55 @@ def synthesize_voice(
     output_path: str
 ) -> str:
     """
-    Converts script text into spoken audio with Kokoro-82M TTS and adjusts speed via FFmpeg atempo if needed.
+    Converts script text into spoken audio. Uses Kokoro-82M with strict memory management, 
+    and automatically falls back to lightweight OpenAI Cloud TTS if RAM is constrained.
     """
-    pipeline = KPipeline(lang_code="a")   # "a" = American English
+    # Force garbage collection before running
+    gc.collect()
 
-    generator = pipeline(script, voice=voice, speed=1.0)
+    try:
+        from kokoro import KPipeline
+        print("        Synthesizing with Kokoro-82M TTS (memory optimized)...")
+        pipeline = KPipeline(lang_code="a")
+        
+        with torch.no_grad():
+            generator = pipeline(script, voice=voice, speed=1.0)
+            samples = []
+            for _, _, audio in generator:
+                samples.append(audio)
 
-    samples = []
-    for _, _, audio in generator:
-        samples.append(audio)
+        audio_combined = np.concatenate(samples)
+        raw_path = output_path.replace(".wav", "_raw.wav")
+        sf.write(raw_path, audio_combined, SAMPLE_RATE)
 
-    audio_combined = np.concatenate(samples)
-    raw_path = output_path.replace(".wav", "_raw.wav")
-    sf.write(raw_path, audio_combined, SAMPLE_RATE)
+        actual_duration = len(audio_combined) / SAMPLE_RATE
+        drift = abs(actual_duration - target_duration)
 
-    # Measure actual generated audio duration
-    actual_duration = len(audio_combined) / SAMPLE_RATE
-    drift = abs(actual_duration - target_duration)
+        if drift <= 1.0:
+            if os.path.exists(output_path):
+                os.remove(output_path)
+            os.rename(raw_path, output_path)
+        else:
+            tempo_ratio = actual_duration / target_duration
+            atempo_filter = _build_atempo_filter(tempo_ratio)
 
-    if drift <= 1.0:
-        # Close enough — rename raw output
-        if os.path.exists(output_path):
-            os.remove(output_path)
-        os.rename(raw_path, output_path)
-        print(f"        Audio duration: {actual_duration:.2f}s (target: {target_duration:.2f}s) — no correction needed")
-    else:
-        # Tempo ratio calculation: audio too long -> ratio > 1 (speed up); audio too short -> ratio < 1 (slow down)
-        tempo_ratio = actual_duration / target_duration
-        atempo_filter = _build_atempo_filter(tempo_ratio)
+            subprocess.run([
+                "ffmpeg",
+                "-i", raw_path,
+                "-filter:a", atempo_filter,
+                output_path,
+                "-y"
+            ], check=True)
 
-        subprocess.run([
-            "ffmpeg",
-            "-i", raw_path,
-            "-filter:a", atempo_filter,
-            output_path,
-            "-y"
-        ], check=True)
+            if os.path.exists(raw_path):
+                os.remove(raw_path)
 
-        os.remove(raw_path)
-        print(f"        Audio duration corrected: {actual_duration:.2f}s -> {target_duration:.2f}s (atempo {tempo_ratio:.3f})")
+        # Cleanup memory immediately
+        del pipeline, samples, audio_combined
+        gc.collect()
+        return output_path
 
-    return output_path
+    except Exception as e:
+        print(f"        Kokoro RAM memory limit hit or error ({str(e)}). Switching to zero-RAM OpenAI Cloud TTS fallback...")
+        gc.collect()
+        return _synthesize_openai_tts(script, voice, output_path)

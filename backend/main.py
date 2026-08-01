@@ -1,8 +1,20 @@
 import os
 import sys
 import uuid
+import gc
 import asyncio
 from typing import Optional, Dict, Any
+
+# Set thread environment variables before importing torch
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MALLOC_TRIM_THRESHOLD_"] = "65536"
+
+try:
+    import torch
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
+except Exception:
+    pass
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
