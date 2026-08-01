@@ -55,6 +55,13 @@ class VoiceoverConfig(BaseModel):
     script_model: str = "gpt-5.4"
 
 
+@app.get("/")
+@app.head("/")
+def root():
+    """Root endpoint for Uptime Robot & health monitoring services."""
+    return {"status": "online", "message": "@claplabs Voiceover Agent API is live"}
+
+
 @app.get("/api/v1/health")
 def health_check():
     return {"status": "ok", "service": "Voiceover Agent Backend"}
